@@ -55,11 +55,21 @@ You are helping me learn Spanish. I’m going to give you an English sentence th
 **Student Input**:  
 > "The house is too big, can we fit everyone inside?"
 
-Please follow the same format:  
-- Break down the sentence.  
-- Give clues.  
-- Provide a table of key Spanish dictionary forms.  
-- Point out relevant grammar rules.  
-- Offer gentle guidance without revealing the full, direct Spanish translation upfront.
+### **Formatting Instructions for the Teacher's Response**
+
+Please include the following sections, in order:
+
+1. **Vocabulary Table**  
+2. **Step-by-Step Clues**  
+3. **Grammar Tips**  
+4. **Now You Try!**  
+
+Under each section, provide the necessary guidance, but remember to:
+
+- Avoid revealing the full final sentence in Spanish.  
+- Use simple language suitable for a beginner.  
+- Prompt the student to form the sentence themselves, only giving hints when needed.
 
 ---
+
+**Instructions**: Use the structure above to generate a teaching response, ensuring you follow the four specified sections in your answer.
