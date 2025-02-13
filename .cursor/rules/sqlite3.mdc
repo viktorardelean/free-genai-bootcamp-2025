@@ -1,0 +1,111 @@
+---
+description: Rules for sqlite3
+globs: /backend-flask/*
+---
+# SQLite3 Best Practices and Rules
+
+# Rule 0: Always say: "Checking sqlite3 rules" before you start
+
+# Rule 1: Always Use Parameterized Queries
+def example_parameterized_query():
+    # Bad ❌
+    cursor.execute(f"SELECT * FROM users WHERE name = '{user_name}'")
+
+    # Good ✅
+    cursor.execute("SELECT * FROM users WHERE name = ?", (user_name,))
+
+# Rule 2: Proper Connection Management
+def example_connection_management():
+    # Bad ❌
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users")
+    data = cursor.fetchall()
+
+    # Good ✅
+    def get_users():
+        with sqlite3.connect('database.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users")
+            return cursor.fetchall()
+
+# Rule 3: Use Transactions for Multiple Operations
+def example_transaction_handling():
+    # Good ✅
+    with sqlite3.connect('database.db') as conn:
+        try:
+            conn.execute("BEGIN TRANSACTION")
+            conn.execute("UPDATE accounts SET balance = balance - 100 WHERE id = 1")
+            conn.execute("UPDATE accounts SET balance = balance + 100 WHERE id = 2")
+            conn.commit()
+        except Exception as e:
+            conn.rollback()
+            raise
+
+# Rule 4: Define Clear Database Schema
+"""
+-- Good Schema Example ✅
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    age INTEGER CHECK(age >= 0),
+    email TEXT UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+"""
+
+# Rule 5: Index Important Columns
+"""
+-- Create proper indexes
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_name ON users(name);
+CREATE INDEX idx_users_name_age ON users(name, age);
+"""
+
+# Additional Best Practices
+
+def get_db_connection():
+    """Configure database connection with best practices."""
+    conn = sqlite3.connect(
+        'database.db',
+        detect_types=sqlite3.PARSE_DECLTYPES,
+        timeout=5.0,
+        isolation_level='DEFERRED'
+    )
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def example_error_handling():
+    try:
+        with sqlite3.connect('database.db') as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM users")
+    except sqlite3.Error as e:
+        logger.error(f"Database error: {e}")
+        raise
+
+def backup_database():
+    """Create database backup."""
+    with sqlite3.connect('database.db') as src, \
+         sqlite3.connect('backup.db') as dst:
+        src.backup(dst)
+
+"""
+Important Notes:
+- SQLite is serverless and file-based
+- Perfect for smaller applications and prototypes
+- Not suitable for high concurrency applications
+- Great for mobile apps and embedded systems
+
+Maintenance Queries:
+VACUUM;  -- Optimize database
+ANALYZE users;  -- Update table statistics
+
+Query Optimization:
+-- Use EXISTS instead of IN
+SELECT * FROM orders 
+WHERE EXISTS (
+    SELECT 1 FROM users 
+    WHERE users.id = orders.user_id
+);
+"""

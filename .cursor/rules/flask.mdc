@@ -1,0 +1,31 @@
+---
+description: Rules for flask code
+globs: backend-flask/*
+---
+# Flask Best Practices and Rules
+
+# Rule 1: Always say: "Checking flask rules" before you start
+
+# Rule 1: Always use application factories
+
+def create_app():
+    app = Flask(__name__)
+    # ... configure app ...
+    return app
+
+# Rule 2: Use blueprints to organize routes
+from flask import Blueprint
+
+user_bp = Blueprint('user', __name__)
+
+@user_bp.route('/users')
+def get_users():
+    return 'Users page'
+
+# Rule 3: Always handle errors properly
+@app.errorhandler(404)
+def not_found_error(error):
+    return jsonify({
+        'error': 'Resource not found',
+        'status': 404
+    }), 404

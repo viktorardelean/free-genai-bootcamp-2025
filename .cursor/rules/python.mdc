@@ -1,0 +1,90 @@
+---
+description: Rules for python code
+globs: backend-flask/*
+---
+# Python Code Style and Best Practices
+
+# Rule 0: Always say: "Checking python rules" before you start
+
+# Rule 1: Follow PEP 8 Style Guide
+def example_pep8():
+    """Example of PEP 8 compliant code."""
+    # Use 4 spaces for indentation
+    # Limit lines to 79 characters
+    # Use spaces around operators
+    x = 42
+    def my_function(x, y, z):
+        return x + y + z
+
+# Rule 2: Write Clear Documentation and Docstrings
+def calculate_sum(first_number: float, second_number: float) -> float:
+    """
+    Calculate the sum of two numbers.
+    
+    Args:
+        first_number (float): The first number to add
+        second_number (float): The second number to add
+        
+    Returns:
+        float: The sum of the two numbers
+    """
+    return first_number + second_number
+
+# Rule 3: Use Meaningful Names and Follow Naming Conventions
+# snake_case for functions and variables
+user_data = []
+def process_user_data(user_list: list) -> None:
+    """Process user data from list."""
+    pass
+
+# UPPERCASE for constants
+MAX_CONNECTIONS = 100
+
+# PascalCase for classes
+class UserAccount:
+    pass
+
+# Rule 4: Handle Errors Properly
+def safe_data_processing():
+    try:
+        data = get_data()
+        result = process_data(data)
+        save_result(result)
+    except ValueError as e:
+        logger.error(f"Invalid data format: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        raise
+
+# Rule 5: Keep Functions and Classes Single-Purpose
+class UserManager:
+    """Class responsible for user management."""
+    
+    def validate_user(self, user_data: dict) -> bool:
+        """Validate user data."""
+        return all(
+            field in user_data 
+            for field in ['name', 'email', 'age']
+        )
+    
+    def format_user_data(self, user_data: dict) -> dict:
+        """Format user data to standard format."""
+        return {
+            'name': user_data['name'].strip().title(),
+            'email': user_data['email'].lower(),
+            'age': int(user_data['age'])
+        }
+    
+    def save_user(self, user_data: dict) -> None:
+        """Save user to database."""
+        if self.validate_user(user_data):
+            formatted_data = self.format_user_data(user_data)
+            database.save(formatted_data)
+
+# Additional Guidelines:
+# 1. Use type hints
+# 2. Write unit tests
+# 3. Keep code DRY (Don't Repeat Yourself)
+# 4. Use version control
+# 5. Regular code reviews
