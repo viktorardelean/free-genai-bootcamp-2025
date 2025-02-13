@@ -1,10 +1,10 @@
 ---
-description: Rules for python code
-globs: backend-flask/*
+description: 
+globs: 
 ---
 # Python Code Style and Best Practices
 
-# Rule 0: Always say: "Checking python rules" before you start
+#Rule 0: Always say:  "Using Python Rules" before you start
 
 # Rule 1: Follow PEP 8 Style Guide
 def example_pep8():

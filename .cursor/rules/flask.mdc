@@ -1,13 +1,11 @@
 ---
-description: Rules for flask code
-globs: backend-flask/*
+description: 
+globs: 
 ---
-# Flask Best Practices and Rules
 
-# Rule 1: Always say: "Checking flask rules" before you start
+# Rule 0: Always say:  "Using Flask Rules" before you start
 
 # Rule 1: Always use application factories
-
 def create_app():
     app = Flask(__name__)
     # ... configure app ...

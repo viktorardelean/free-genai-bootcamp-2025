@@ -4,7 +4,69 @@ from datetime import datetime
 import math
 
 def load(app):
-  # todo /study_sessions POST
+  @app.route('/api/study-sessions', methods=['POST'])
+  @cross_origin()
+  def create_study_session():
+    try:
+      data = request.get_json()
+      group_id = data.get('group_id')
+      study_activity_id = data.get('study_activity_id')
+
+      if group_id is None or study_activity_id is None:
+        return jsonify({"error": "Missing required fields: group_id or study_activity_id"}), 400
+
+      cursor = app.db.cursor()
+      created_at = datetime.now()
+
+      # Insert the new study session
+      insert_stmt = '''
+        INSERT INTO study_sessions (group_id, study_activity_id, created_at)
+        VALUES (?, ?, ?)
+      '''
+      cursor.execute(insert_stmt, (group_id, study_activity_id, created_at))
+      
+      # Get the newly created session ID
+      new_session_id = cursor.lastrowid
+      
+      # Commit the changes
+      app.db.commit()
+
+      # Fetch the newly created session with related data
+      cursor.execute('''
+        SELECT 
+          ss.id,
+          ss.group_id,
+          g.name as group_name,
+          sa.id as activity_id,
+          sa.name as activity_name,
+          ss.created_at,
+          COUNT(wri.id) as review_items_count
+        FROM study_sessions ss
+        JOIN groups g ON g.id = ss.group_id
+        JOIN study_activities sa ON sa.id = ss.study_activity_id
+        LEFT JOIN word_review_items wri ON wri.study_session_id = ss.id
+        WHERE ss.id = ?
+        GROUP BY ss.id
+      ''', (new_session_id,))
+      
+      session = cursor.fetchone()
+
+      # Build and return the response
+      response = {
+        'id': session['id'],
+        'group_id': session['group_id'],
+        'group_name': session['group_name'],
+        'activity_id': session['activity_id'],
+        'activity_name': session['activity_name'],
+        'start_time': session['created_at'],
+        'end_time': session['created_at'],  # For now, just use the same time since we don't track end time
+        'review_items_count': session['review_items_count']
+      }
+      
+      return jsonify(response), 201
+
+    except Exception as e:
+      return jsonify({"error": str(e)}), 500
 
   @app.route('/api/study-sessions', methods=['GET'])
   @cross_origin()
