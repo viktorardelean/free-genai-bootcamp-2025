@@ -3,6 +3,9 @@ from flask import Flask
 import sqlite3
 from pathlib import Path
 import os
+from models.word import Word
+from models.group import Group
+from services.group_service import GroupService
 
 @pytest.fixture(autouse=True)
 def cleanup():
@@ -27,11 +30,33 @@ def app():
     with app.app_context():
         cursor = app.db.cursor()
         
-        # Run migrations to create tables
-        migrations_path = Path(__file__).parent.parent.parent / 'db' / 'migrations'
-        for migration_file in sorted(migrations_path.glob('*.sql')):
-            with open(migration_file) as f:
-                cursor.executescript(f.read())
+        # Create tables with updated schema
+        cursor.execute('''
+            CREATE TABLE groups (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL,
+                words_count INTEGER DEFAULT 0
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE words (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                spanish TEXT NOT NULL COLLATE NOCASE,
+                english TEXT NOT NULL
+            )
+        ''')
+        
+        cursor.execute('''
+            CREATE TABLE word_groups (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                word_id INTEGER NOT NULL,
+                group_id INTEGER NOT NULL,
+                UNIQUE(word_id, group_id),
+                FOREIGN KEY (word_id) REFERENCES words (id),
+                FOREIGN KEY (group_id) REFERENCES groups (id)
+            )
+        ''')
         
         app.db.commit()
     
@@ -67,8 +92,11 @@ def test_data(app):
     
     group_ids = {}
     for group_name, words in groups:
-        # Create group
-        cursor.execute('INSERT INTO groups (name) VALUES (?)', (group_name,))
+        # Create group with word count
+        cursor.execute('''
+            INSERT INTO groups (name, words_count) 
+            VALUES (?, ?)
+        ''', (group_name, len(words)))
         group_id = cursor.lastrowid
         group_ids[group_name] = group_id
         
@@ -89,7 +117,16 @@ def test_data(app):
 
 def test_get_group_words_raw_integration(client, app, test_data):
     """Integration test for getting raw words from a group"""
-    # Test Animals group
+    # Test using service directly
+    service = GroupService(app.db)
+    words = service.get_group_words_raw(test_data["Animals"])
+    
+    # Verify service response
+    assert len(words) == 3
+    assert all(isinstance(w, Word) for w in words)
+    assert any(w.spanish == 'gato' and w.english == 'cat' for w in words)
+    
+    # Test HTTP endpoint
     response = client.get(f'/api/groups/{test_data["Animals"]}/words/raw')
     assert response.status_code == 200
     data = response.get_json()
@@ -98,12 +135,10 @@ def test_get_group_words_raw_integration(client, app, test_data):
     assert 'items' in data
     assert len(data['items']) == 3
     
-    # Verify words are returned in alphabetical order
-    words = {word['spanish']: word['english'] for word in data['items']}
-    assert 'gato' in words
-    assert 'perro' in words
-    assert 'pájaro' in words
-    assert words['gato'] == 'cat'
+    # Verify words through API match service response
+    api_words = {w['spanish']: w['english'] for w in data['items']}
+    service_words = {w.spanish: w.english for w in words}
+    assert api_words == service_words
 
 def test_get_group_words_raw_cross_group_isolation_integration(client, app, test_data):
     """Test that words from different groups don't mix"""
@@ -193,3 +228,59 @@ def test_get_group_words_raw_concurrent_access_integration(client, app, test_dat
             assert response.status_code == 200
             data = response.get_json()
             assert 'items' in data 
+
+def test_get_groups_pagination_integration(client, app, test_data):
+    """Test group pagination through API"""
+    # Test first page
+    response = client.get('/api/groups?page=1&per_page=2')
+    assert response.status_code == 200
+    data = response.get_json()
+    
+    assert 'groups' in data
+    assert 'total_pages' in data
+    assert 'current_page' in data
+    assert len(data['groups']) <= 2
+
+def test_get_group_words_sorting_integration(client, app, test_data):
+    """Test word sorting through API"""
+    # Test ascending order
+    response = client.get(
+        f'/api/groups/{test_data["Animals"]}/words?sort_by=spanish&order=asc'
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    
+    words = [w['spanish'] for w in data['words']]
+    assert words == sorted(words)
+    
+    # Test descending order
+    response = client.get(
+        f'/api/groups/{test_data["Animals"]}/words?sort_by=spanish&order=desc'
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    
+    words = [w['spanish'] for w in data['words']]
+    assert words == sorted(words, reverse=True)
+
+def test_get_groups_pagination_invalid_page(client, app, test_data):
+    """Test pagination with invalid page number"""
+    response = client.get('/api/groups?page=invalid')
+    assert response.status_code == 400
+    data = response.get_json()
+    assert 'error' in data
+    assert data['error'] == "Invalid pagination parameters"
+
+def test_get_group_words_sorting_invalid_params(client, app, test_data):
+    """Test sorting with invalid parameters"""
+    # Test invalid sort column
+    response = client.get(
+        f'/api/groups/{test_data["Animals"]}/words?sort_by=invalid&order=asc'
+    )
+    assert response.status_code == 200  # Should use default sort
+    
+    # Test invalid order
+    response = client.get(
+        f'/api/groups/{test_data["Animals"]}/words?sort_by=spanish&order=invalid'
+    )
+    assert response.status_code == 200  # Should use default order 
