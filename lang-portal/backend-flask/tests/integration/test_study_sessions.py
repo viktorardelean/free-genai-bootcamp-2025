@@ -24,6 +24,26 @@ def app():
             )
         ''')
         
+        # Create words table
+        cursor.execute('''
+            CREATE TABLE words (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                spanish TEXT NOT NULL,
+                english TEXT NOT NULL
+            )
+        ''')
+
+        # Create word_groups join table
+        cursor.execute('''
+            CREATE TABLE word_groups (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                word_id INTEGER NOT NULL,
+                group_id INTEGER NOT NULL,
+                FOREIGN KEY (word_id) REFERENCES words (id),
+                FOREIGN KEY (group_id) REFERENCES groups (id)
+            )
+        ''')
+        
         # Create study_activities table
         cursor.execute('''
             CREATE TABLE study_activities (
@@ -49,7 +69,11 @@ def app():
             CREATE TABLE word_review_items (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 study_session_id INTEGER NOT NULL,
-                FOREIGN KEY (study_session_id) REFERENCES study_sessions (id)
+                word_id INTEGER NOT NULL,
+                correct BOOLEAN NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                FOREIGN KEY (study_session_id) REFERENCES study_sessions (id),
+                FOREIGN KEY (word_id) REFERENCES words (id)
             )
         ''')
         
@@ -189,4 +213,203 @@ def test_create_multiple_sessions_integration(client, app, test_data):
     cursor = app.db.cursor()
     cursor.execute('SELECT COUNT(*) as count FROM study_sessions')
     count = cursor.fetchone()['count']
-    assert count == 2 
+    assert count == 2
+
+def test_review_word_integration_success(client, app, test_data):
+    """Test creating a word review with actual database interaction"""
+    # First create a study session
+    response = client.post('/api/study-sessions', json={
+        'group_id': test_data['group_id'],
+        'study_activity_id': test_data['activity_id']
+    })
+    assert response.status_code == 201
+    session_data = response.get_json()
+    
+    # Create a test word and associate it with the group
+    cursor = app.db.cursor()
+    cursor.execute(
+        'INSERT INTO words (spanish, english) VALUES (?, ?)',
+        ('hola', 'hello')
+    )
+    word_id = cursor.lastrowid
+    
+    # Add word to the group
+    cursor.execute(
+        'INSERT INTO word_groups (word_id, group_id) VALUES (?, ?)',
+        (word_id, test_data['group_id'])
+    )
+    app.db.commit()
+    
+    # Submit a review
+    response = client.post(
+        f'/api/study-sessions/{session_data["id"]}/words/{word_id}/review',
+        json={'correct': True}
+    )
+    
+    # Add debug output
+    print(f"Response: {response.status_code} - {response.get_json()}")
+    
+    # Check response
+    assert response.status_code == 201
+    data = response.get_json()
+    assert data['study_session_id'] == session_data['id']
+    assert data['word_id'] == word_id
+    assert data['word_spanish'] == 'hola'
+    assert data['word_english'] == 'hello'
+    assert data['correct'] in (True, 1)
+    
+    # Verify database state
+    cursor.execute('''
+        SELECT 
+            wri.correct,
+            w.spanish,
+            w.english,
+            wg.group_id
+        FROM word_review_items wri
+        JOIN words w ON w.id = wri.word_id
+        JOIN word_groups wg ON w.id = wg.word_id
+        WHERE wri.study_session_id = ? AND wri.word_id = ?
+    ''', (session_data['id'], word_id))
+    
+    review = cursor.fetchone()
+    assert review is not None
+    assert review['correct'] == 1
+    assert review['spanish'] == 'hola'
+    assert review['english'] == 'hello'
+    assert review['group_id'] == test_data['group_id']
+
+def test_review_word_integration_multiple_reviews(client, app, test_data):
+    """Test submitting multiple reviews for the same word"""
+    # Create session and word
+    response = client.post('/api/study-sessions', json={
+        'group_id': test_data['group_id'],
+        'study_activity_id': test_data['activity_id']
+    })
+    session_data = response.get_json()
+    
+    cursor = app.db.cursor()
+    cursor.execute(
+        'INSERT INTO words (spanish, english) VALUES (?, ?)',
+        ('hola', 'hello')
+    )
+    word_id = cursor.lastrowid
+    app.db.commit()
+    
+    # Submit first review (incorrect)
+    response1 = client.post(
+        f'/api/study-sessions/{session_data["id"]}/words/{word_id}/review',
+        json={'correct': False}
+    )
+    assert response1.status_code == 201
+    
+    # Submit second review (correct)
+    response2 = client.post(
+        f'/api/study-sessions/{session_data["id"]}/words/{word_id}/review',
+        json={'correct': True}
+    )
+    assert response2.status_code == 201
+    
+    # Verify both reviews exist in database
+    cursor.execute('''
+        SELECT correct
+        FROM word_review_items
+        WHERE study_session_id = ? AND word_id = ?
+        ORDER BY created_at
+    ''', (session_data['id'], word_id))
+    
+    reviews = cursor.fetchall()
+    assert len(reviews) == 2
+    assert reviews[0]['correct'] == 0  # First review (incorrect)
+    assert reviews[1]['correct'] == 1  # Second review (correct)
+
+def test_review_word_integration_nonexistent_session(client, app, test_data):
+    """Test reviewing a word for a non-existent session"""
+    # Create test word
+    cursor = app.db.cursor()
+    cursor.execute(
+        'INSERT INTO words (spanish, english) VALUES (?, ?)',
+        ('hola', 'hello')
+    )
+    word_id = cursor.lastrowid
+    app.db.commit()
+    
+    # Try to review with non-existent session
+    response = client.post(
+        f'/api/study-sessions/999/words/{word_id}/review',
+        json={'correct': True}
+    )
+    
+    assert response.status_code == 404
+    assert response.get_json()['error'] == "Study session not found"
+    
+    # Verify no review was created
+    cursor.execute('SELECT COUNT(*) as count FROM word_review_items')
+    count = cursor.fetchone()['count']
+    assert count == 0
+
+def test_review_word_integration_nonexistent_word(client, app, test_data):
+    """Test reviewing a non-existent word"""
+    # Create study session
+    response = client.post('/api/study-sessions', json={
+        'group_id': test_data['group_id'],
+        'study_activity_id': test_data['activity_id']
+    })
+    session_data = response.get_json()
+    
+    # Try to review non-existent word
+    response = client.post(
+        f'/api/study-sessions/{session_data["id"]}/words/999/review',
+        json={'correct': True}
+    )
+    
+    # Add debug output
+    print(f"Response: {response.status_code} - {response.get_json()}")
+    
+    # Check response
+    data = response.get_json()
+    assert response.status_code == 404
+    assert data['error'] == "Word not found"
+    
+    # Verify no review was created
+    cursor = app.db.cursor()
+    cursor.execute('SELECT COUNT(*) as count FROM word_review_items')
+    count = cursor.fetchone()['count']
+    assert count == 0
+
+def test_review_word_integration_invalid_input(client, app, test_data):
+    """Test reviewing with invalid input"""
+    # Create session and word
+    response = client.post('/api/study-sessions', json={
+        'group_id': test_data['group_id'],
+        'study_activity_id': test_data['activity_id']
+    })
+    session_data = response.get_json()
+    
+    cursor = app.db.cursor()
+    cursor.execute(
+        'INSERT INTO words (spanish, english) VALUES (?, ?)',
+        ('hola', 'hello')
+    )
+    word_id = cursor.lastrowid
+    app.db.commit()
+    
+    # Test with missing correct field
+    response = client.post(
+        f'/api/study-sessions/{session_data["id"]}/words/{word_id}/review',
+        json={}
+    )
+    assert response.status_code == 400
+    assert response.get_json()['error'] == "Missing required field: correct"
+    
+    # Test with invalid correct type
+    response = client.post(
+        f'/api/study-sessions/{session_data["id"]}/words/{word_id}/review',
+        json={'correct': 'true'}
+    )
+    assert response.status_code == 400
+    assert response.get_json()['error'] == "Field 'correct' must be a boolean"
+    
+    # Verify no reviews were created
+    cursor.execute('SELECT COUNT(*) as count FROM word_review_items')
+    count = cursor.fetchone()['count']
+    assert count == 0 
