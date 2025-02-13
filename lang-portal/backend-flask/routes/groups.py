@@ -155,7 +155,49 @@ def load(app):
     except Exception as e:
       return jsonify({"error": str(e)}), 500
 
-  # todo GET /groups/:id/words/raw
+  @app.route('/api/groups/<int:id>/words/raw', methods=['GET'])
+  @cross_origin()
+  def get_group_words_raw(id):
+    """Get raw words for a group without study statistics.
+    
+    Args:
+        id (int): The group ID
+        
+    Returns:
+        tuple: (JSON response, HTTP status code)
+    """
+    try:
+      cursor = app.db.cursor()
+      
+      # Check if group exists
+      cursor.execute('SELECT id FROM groups WHERE id = ?', (id,))
+      if not cursor.fetchone():
+        return jsonify({"error": "Group not found"}), 404
+      
+      # Get words for group without study statistics
+      cursor.execute('''
+        SELECT DISTINCT  -- Add DISTINCT to prevent duplicates
+            w.id,
+            w.spanish,
+            w.english
+        FROM words w
+        JOIN word_groups wg ON wg.word_id = w.id
+        WHERE wg.group_id = ?
+        ORDER BY w.spanish COLLATE NOCASE  -- Add COLLATE NOCASE for proper Spanish sorting
+      ''', (id,))
+      
+      words = cursor.fetchall()
+      
+      return jsonify({
+        'items': [{
+          'id': word['id'],
+          'spanish': word['spanish'],
+          'english': word['english']
+        } for word in words]
+      })
+
+    except Exception as e:
+      return jsonify({"error": str(e)}), 500
 
   @app.route('/groups/<int:id>/study_sessions', methods=['GET'])
   @cross_origin()
