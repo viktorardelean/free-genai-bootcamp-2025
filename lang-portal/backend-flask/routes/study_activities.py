@@ -1,38 +1,55 @@
 from flask import jsonify, request
 from flask_cors import cross_origin
 import math
+from services.study_activity_service import StudyActivityService
 
 def load(app):
-    @app.route('/api/study-activities', methods=['GET'])
+    @app.route('/api/study_activities', methods=['GET'])
     @cross_origin()
     def get_study_activities():
-        cursor = app.db.cursor()
-        cursor.execute('SELECT id, name, url, preview_url FROM study_activities')
-        activities = cursor.fetchall()
-        
-        return jsonify([{
-            'id': activity['id'],
-            'title': activity['name'],
-            'launch_url': activity['url'],
-            'preview_url': activity['preview_url']
-        } for activity in activities])
+        """Get all study activities."""
+        try:
+            service = StudyActivityService(app.db)
+            activities = service.get_all_activities()
+            return jsonify(activities)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
-    @app.route('/api/study-activities/<int:id>', methods=['GET'])
+    @app.route('/api/study_activities/<int:id>', methods=['GET'])
     @cross_origin()
     def get_study_activity(id):
-        cursor = app.db.cursor()
-        cursor.execute('SELECT id, name, url, preview_url FROM study_activities WHERE id = ?', (id,))
-        activity = cursor.fetchone()
-        
-        if not activity:
-            return jsonify({'error': 'Activity not found'}), 404
+        """Get a single study activity by ID."""
+        try:
+            service = StudyActivityService(app.db)
+            activity = service.get_activity(id)
             
-        return jsonify({
-            'id': activity['id'],
-            'title': activity['name'],
-            'launch_url': activity['url'],
-            'preview_url': activity['preview_url']
-        })
+            if activity is None:
+                return jsonify({"error": "Activity not found"}), 404
+                
+            return jsonify(activity)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
+
+    @app.route('/api/study_activities', methods=['POST'])
+    @cross_origin()
+    def create_study_activity():
+        """Create a new study activity."""
+        try:
+            data = request.get_json()
+            if not data or 'name' not in data:
+                return jsonify({
+                    "error": "Missing required field: name"
+                }), 400
+            
+            service = StudyActivityService(app.db)
+            activity = service.create_activity(
+                name=data['name'],
+                description=data.get('description')
+            )
+            
+            return jsonify(activity), 201
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
     @app.route('/api/study-activities/<int:id>/sessions', methods=['GET'])
     @cross_origin()
