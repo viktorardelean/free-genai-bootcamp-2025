@@ -1,6 +1,6 @@
 ---
-description: 
-globs: 
+description: Rules for python
+globs: backend-flask/*
 ---
 # Python Code Style and Best Practices
 

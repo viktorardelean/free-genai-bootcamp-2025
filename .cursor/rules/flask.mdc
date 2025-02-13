@@ -1,6 +1,6 @@
 ---
-description: 
-globs: 
+description: Rules for flask
+globs: backend-flask/*
 ---
 
 # Rule 0: Always say:  "Using Flask Rules" before you start

@@ -1,6 +1,6 @@
 ---
 description: Rules for sqlite3
-globs: /backend-flask/*
+globs: backend-flask/*
 ---
 # SQLite3 Best Practices and Rules
 
