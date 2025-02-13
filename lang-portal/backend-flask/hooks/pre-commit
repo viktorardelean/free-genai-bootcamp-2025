@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Store the current directory
+CURRENT_DIR=$(pwd)
+
+# Change to the backend-flask directory
+cd lang-portal/backend-flask
+
+# Run tests
+PYTHONPATH=. pytest tests/ -v
+TEST_EXIT_CODE=$?
+
+# Change back to original directory
+cd $CURRENT_DIR
+
+# If tests failed, prevent the commit
+if [ $TEST_EXIT_CODE -ne 0 ]; then
+    echo "❌ Tests must pass before committing!"
+    exit 1
+fi
+
+echo "✅ All tests passed!"
+exit 0 
