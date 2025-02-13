@@ -211,9 +211,15 @@ def test_get_group_words_raw_database_state_integration(client, app, test_data):
 def test_get_group_words_raw_concurrent_access_integration(client, app, test_data):
     """Test concurrent access to the endpoint"""
     from concurrent.futures import ThreadPoolExecutor
+    import threading
+    
+    # Create a lock for database access
+    db_lock = threading.Lock()
     
     def make_request(group_id):
-        return client.get(f'/api/groups/{group_id}/words/raw')
+        with db_lock:  # Ensure thread-safe database access
+            with app.app_context():
+                return client.get(f'/api/groups/{group_id}/words/raw')
     
     # Make concurrent requests
     with ThreadPoolExecutor(max_workers=4) as executor:
@@ -227,7 +233,8 @@ def test_get_group_words_raw_concurrent_access_integration(client, app, test_dat
             response = future.result()
             assert response.status_code == 200
             data = response.get_json()
-            assert 'items' in data 
+            assert 'items' in data
+            assert len(data['items']) > 0  # Should have words
 
 def test_get_groups_pagination_integration(client, app, test_data):
     """Test group pagination through API"""

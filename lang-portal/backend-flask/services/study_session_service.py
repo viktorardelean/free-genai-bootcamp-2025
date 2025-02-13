@@ -1,7 +1,7 @@
 from typing import List, Optional, Dict
 from dataclasses import dataclass
 import sqlite3
-from datetime import datetime
+from datetime import datetime, UTC
 
 @dataclass
 class StudySession:
@@ -40,8 +40,8 @@ class StudySessionService:
         if not activity:
             return None
             
-        # Create session
-        created_at = datetime.utcnow().isoformat()
+        # Create session with UTC timestamp
+        created_at = datetime.now(UTC).isoformat()
         cursor.execute('''
             INSERT INTO study_sessions (group_id, study_activity_id, created_at)
             VALUES (?, ?, ?)
@@ -82,8 +82,8 @@ class StudySessionService:
         if not cursor.fetchone():
             return None
             
-        # Record review
-        created_at = datetime.utcnow().isoformat()
+        # Record review with UTC timestamp
+        created_at = datetime.now(UTC).isoformat()
         cursor.execute('''
             INSERT INTO word_review_items (
                 study_session_id, word_id, correct, created_at
