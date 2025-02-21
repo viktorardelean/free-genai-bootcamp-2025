@@ -79,3 +79,67 @@ curl http://localhost:8008/api/generate -d '{
 }'
 ```
 
+# Technical FAQ
+
+## How do I change the model?
+
+You can change the model by updating the `LLM_MODEL_ID` environment variable in the `.env` file.
+
+## How do I change the port?    
+
+You can change the port by updating the `LLM_ENDPOINT_PORT` environment variable in the `.env` file.
+
+## How do I change the host IP?
+
+You can change the host IP by updating the `host_ip` environment variable in the `.env` file.
+
+## How do I change the proxy settings?
+
+You can change the proxy settings by updating the `http_proxy`, `https_proxy`, and `no_proxy` environment variables in the `.env` file.
+
+## How do I check the status of the container?
+
+You can check the status of the container by running the following command:
+
+```bash
+docker container ls | grep ollama-server
+```
+
+## Is the model still avaialble if the container is stopped?
+
+No, the model will not be available if the container is stopped. You will need to start the container again and pull the model again.
+
+## How do I interface the LLM with a microservice, so that I can use it in a production environment?
+
+The recommended way is to use the Python client provided by the `opea-comps` package. Here's a basic example:
+
+```python
+from opea_comps.llm import OllamaClient
+
+# Initialize the client
+client = OllamaClient(
+    endpoint="http://localhost:8008",
+    model="llama3.2:1b"
+)
+
+# Generate a response
+response = client.generate("Why is the sky blue?")
+print(response)
+
+# Or use it in async context
+async def get_llm_response(prompt: str):
+    async with OllamaClient(endpoint="http://localhost:8008") as client:
+        response = await client.generate_async(prompt)
+        return response
+```
+
+The Python client handles:
+- Connection management
+- Retries and timeouts
+- Async support
+- Error handling
+- Response streaming
+- Model management
+
+For more details on the Python client, refer to the `opea-comps` documentation.
+
