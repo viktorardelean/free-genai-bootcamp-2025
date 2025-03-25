@@ -21,4 +21,4 @@ Simply delete the `words.db` to clear entire database.
 python app.py 
 ```
 
-This should start the flask app on port `5000`
+This should start the flask app on port `5001`

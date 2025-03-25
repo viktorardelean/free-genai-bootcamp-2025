@@ -77,7 +77,13 @@ def test_seeding():
     # Check study activities were added
     cursor.execute("SELECT name FROM study_activities")
     activities = {row['name'] for row in cursor.fetchall()}
-    expected_activities = {'Flashcards', 'Multiple Choice', 'Spelling', 'Translation'}
+    expected_activities = {
+        'Flashcards', 
+        'Multiple Choice', 
+        'Spelling', 
+        'Translation',
+        'Writing Practice'
+    }
     assert expected_activities == activities, "Not all study activities were created"
 
 def test_word_group_relationships():

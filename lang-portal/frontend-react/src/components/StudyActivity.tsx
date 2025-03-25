@@ -4,21 +4,25 @@ import { Button } from '@/components/ui/button'
 type ActivityProps = {
   activity: {
     id: number
+    name: string
+    url: string
     preview_url: string
-    title: string
-    launch_url: string
   }
+  groupId?: number
 }
 
-export default function StudyActivity({ activity }: ActivityProps) {
+export default function StudyActivity({ activity, groupId }: ActivityProps) {
   return (
     <div className="bg-sidebar rounded-lg shadow-md overflow-hidden">
-      <img src={activity.preview_url} alt={activity.title} className="w-full h-48 object-cover" />
+      <img src={activity.preview_url} alt={activity.name} className="w-full h-48 object-cover" />
       <div className="p-4">
-        <h3 className="text-xl font-semibold mb-2">{activity.title}</h3>
+        <h3 className="text-xl font-semibold mb-2">{activity.name}</h3>
         <div className="flex justify-between">
           <Button asChild>
-            <Link to={`/study-activities/${activity.id}/launch`}>
+            <Link 
+              to={`/study-activities/${activity.id}/launch`}
+              state={{ groupId }}
+            >
               Launch
             </Link>
           </Button>

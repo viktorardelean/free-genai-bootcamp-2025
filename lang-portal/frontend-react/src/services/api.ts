@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:5000';
+const API_BASE_URL = 'http://localhost:5001';
 
 // Group types
 export interface Group {
@@ -157,25 +157,24 @@ export const fetchWordDetails = async (wordId: number): Promise<Word> => {
 };
 
 // Study Session API
-export const createStudySession = async (
-  groupId: number,
-  studyActivityId: number
-): Promise<{ session_id: number }> => {
-  const response = await fetch(`${API_BASE_URL}/study_sessions`, {
+export async function createStudySession(groupId: number, activityId: number) {
+  const response = await fetch('http://localhost:5001/api/study-sessions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
       group_id: groupId,
-      study_activity_id: studyActivityId,
-    }),
+      study_activity_id: activityId
+    })
   });
+
   if (!response.ok) {
     throw new Error('Failed to create study session');
   }
+
   return response.json();
-};
+}
 
 export const submitStudySessionReview = async (
   sessionId: number,
@@ -206,7 +205,7 @@ export async function fetchStudySessions(
   perPage: number = 10
 ): Promise<StudySessionsResponse> {
   const response = await fetch(
-    `${API_BASE_URL}/api/study-sessions?page=${page}&per_page=${perPage}`
+    `${API_BASE_URL}/api/study_sessions?page=${page}&per_page=${perPage}`
   );
   if (!response.ok) {
     throw new Error('Failed to fetch study sessions');

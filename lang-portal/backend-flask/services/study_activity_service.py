@@ -6,7 +6,8 @@ import sqlite3
 class StudyActivity:
     id: int
     name: str
-    description: Optional[str] = None
+    launch_url: str
+    preview_url: str
 
 class StudyActivityService:
     def __init__(self, db_connection: sqlite3.Connection):
@@ -16,11 +17,11 @@ class StudyActivityService:
         """Get all study activities.
         
         Returns:
-            List of activity dictionaries with id, name, and description
+            List of activity dictionaries with id, name, launch_url, and preview_url
         """
         cursor = self.db.cursor()
         cursor.execute('''
-            SELECT id, name, description
+            SELECT id, name, launch_url, preview_url
             FROM study_activities
             ORDER BY name
         ''')
@@ -28,7 +29,8 @@ class StudyActivityService:
         return [{
             'id': row['id'],
             'name': row['name'],
-            'description': row['description']
+            'launch_url': row['launch_url'],
+            'preview_url': row['preview_url']
         } for row in cursor.fetchall()]
     
     def get_activity(self, activity_id: int) -> Optional[Dict]:
@@ -42,7 +44,7 @@ class StudyActivityService:
         """
         cursor = self.db.cursor()
         cursor.execute('''
-            SELECT id, name, description
+            SELECT id, name, launch_url, preview_url
             FROM study_activities
             WHERE id = ?
         ''', (activity_id,))
@@ -54,24 +56,26 @@ class StudyActivityService:
         return {
             'id': row['id'],
             'name': row['name'],
-            'description': row['description']
+            'launch_url': row['launch_url'],
+            'preview_url': row['preview_url']
         }
     
-    def create_activity(self, name: str, description: str = None) -> Dict:
+    def create_activity(self, name: str, launch_url: str, preview_url: str) -> Dict:
         """Create a new study activity.
         
         Args:
             name: Name of the activity
-            description: Optional description
+            launch_url: URL of the activity
+            preview_url: Preview URL of the activity
             
         Returns:
             Created activity dictionary
         """
         cursor = self.db.cursor()
         cursor.execute('''
-            INSERT INTO study_activities (name, description)
-            VALUES (?, ?)
-        ''', (name, description))
+            INSERT INTO study_activities (name, launch_url, preview_url)
+            VALUES (?, ?, ?)
+        ''', (name, launch_url, preview_url))
         
         activity_id = cursor.lastrowid
         self.db.commit()
@@ -79,5 +83,6 @@ class StudyActivityService:
         return {
             'id': activity_id,
             'name': name,
-            'description': description
+            'launch_url': launch_url,
+            'preview_url': preview_url
         } 

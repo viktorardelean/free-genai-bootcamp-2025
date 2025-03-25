@@ -13,13 +13,31 @@ def init_db():
     conn.row_factory = sqlite3.Row
     
     try:
+        # Create migrations table if it doesn't exist
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS migrations (
+                filename TEXT PRIMARY KEY,
+                applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+        
         # Run migrations in order
         for migration_file in sorted(migrations_path.glob('*.sql')):
-            print(f"Running migration: {migration_file.name}")
-            with open(migration_file) as f:
-                conn.executescript(f.read())
+            # Check if migration was already applied
+            cursor = conn.cursor()
+            cursor.execute('SELECT filename FROM migrations WHERE filename = ?', 
+                         (migration_file.name,))
+            if cursor.fetchone() is None:
+                print(f"Running migration: {migration_file.name}")
+                with open(migration_file) as f:
+                    conn.executescript(f.read())
+                # Record that this migration was applied
+                conn.execute('INSERT INTO migrations (filename) VALUES (?)', 
+                           (migration_file.name,))
+                conn.commit()
+            else:
+                print(f"Skipping migration {migration_file.name} - already applied")
         
-        conn.commit()
         print("Database initialized successfully")
         
     except Exception as e:

@@ -1,55 +1,58 @@
-from flask import jsonify, request
+from flask import jsonify, request, current_app
 from flask_cors import cross_origin
 import math
 from services.study_activity_service import StudyActivityService
+import traceback
 
 def load(app):
-    @app.route('/api/study_activities', methods=['GET'])
+    service = StudyActivityService(app.db)
+
+    @app.route('/api/study-activities', methods=['GET'])
     @cross_origin()
     def get_study_activities():
         """Get all study activities."""
         try:
-            service = StudyActivityService(app.db)
             activities = service.get_all_activities()
             return jsonify(activities)
         except Exception as e:
+            app.logger.error(f'Error in get_study_activities: {str(e)}')
+            app.logger.error(traceback.format_exc())
             return jsonify({"error": str(e)}), 500
 
-    @app.route('/api/study_activities/<int:id>', methods=['GET'])
+    @app.route('/api/study-activities/<int:id>', methods=['GET'])
     @cross_origin()
     def get_study_activity(id):
         """Get a single study activity by ID."""
         try:
-            service = StudyActivityService(app.db)
             activity = service.get_activity(id)
             
             if activity is None:
                 return jsonify({"error": "Activity not found"}), 404
-                
-            return jsonify(activity)
+            else:
+                return jsonify(activity)
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    @app.route('/api/study_activities', methods=['POST'])
+    @app.route('/api/study-activities', methods=['POST'])
     @cross_origin()
     def create_study_activity():
-        """Create a new study activity."""
-        try:
-            data = request.get_json()
-            if not data or 'name' not in data:
-                return jsonify({
-                    "error": "Missing required field: name"
-                }), 400
+        data = request.get_json()
+        
+        # Validate required fields
+        required_fields = ['name', 'launch_url', 'preview_url']
+        if not all(field in data for field in required_fields):
+            return jsonify({'error': 'Missing required fields'}), 400
             
-            service = StudyActivityService(app.db)
+        try:
             activity = service.create_activity(
                 name=data['name'],
-                description=data.get('description')
+                launch_url=data['launch_url'],
+                preview_url=data['preview_url']
             )
-            
             return jsonify(activity), 201
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            current_app.logger.error(f"Error creating activity: {str(e)}")
+            return jsonify({'error': str(e)}), 500
 
     @app.route('/api/study-activities/<int:id>/sessions', methods=['GET'])
     @cross_origin()

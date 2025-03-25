@@ -12,7 +12,8 @@ def db():
         CREATE TABLE study_activities (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            description TEXT
+            launch_url TEXT NOT NULL,
+            preview_url TEXT NOT NULL
         )
     ''')
     return conn
@@ -26,9 +27,9 @@ def test_data(db):
     """Insert test activity"""
     cursor = db.cursor()
     cursor.execute('''
-        INSERT INTO study_activities (name, description)
-        VALUES (?, ?)
-    ''', ('Flashcards', 'Practice with flashcards'))
+        INSERT INTO study_activities (name, launch_url, preview_url)
+        VALUES (?, ?, ?)
+    ''', ('Flashcards', 'http://example.com/flashcards', 'http://example.com/preview.jpg'))
     activity_id = cursor.lastrowid
     db.commit()
     return {'activity_id': activity_id}
@@ -54,7 +55,8 @@ def test_create_activity(service):
     """Test creating new activity"""
     activity = service.create_activity(
         name='Quiz',
-        description='Test your knowledge'
+        launch_url='http://example.com/quiz',
+        preview_url='http://example.com/preview.jpg'
     )
     assert activity['name'] == 'Quiz'
-    assert activity['description'] == 'Test your knowledge' 
+    assert activity['launch_url'] == 'http://example.com/quiz' 

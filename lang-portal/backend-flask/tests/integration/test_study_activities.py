@@ -15,7 +15,8 @@ def app():
             CREATE TABLE study_activities (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                description TEXT
+                launch_url TEXT NOT NULL,
+                preview_url TEXT NOT NULL
             )
         ''')
         app.db.commit()
@@ -34,47 +35,50 @@ def test_data(app):
     """Insert test activities"""
     cursor = app.db.cursor()
     cursor.execute('''
-        INSERT INTO study_activities (name, description)
-        VALUES (?, ?)
-    ''', ('Flashcards', 'Practice with flashcards'))
+        INSERT INTO study_activities (name, launch_url, preview_url)
+        VALUES (?, ?, ?)
+    ''', ('Flashcards', 'http://example.com/flashcards', 'http://example.com/preview.jpg'))
     activity_id = cursor.lastrowid
     app.db.commit()
     return {'activity_id': activity_id}
 
 def test_get_activities_integration(client):
     """Test getting all activities"""
-    response = client.get('/api/study_activities')
+    response = client.get('/api/study-activities')
     assert response.status_code == 200
     data = response.get_json()
     assert isinstance(data, list)
 
 def test_get_activity_integration(client, test_data):
     """Test getting single activity"""
-    response = client.get(f'/api/study_activities/{test_data["activity_id"]}')
+    response = client.get(f'/api/study-activities/{test_data["activity_id"]}')
     assert response.status_code == 200
     data = response.get_json()
     assert data['name'] == 'Flashcards'
-    assert data['description'] == 'Practice with flashcards'
+    assert data['launch_url'] == 'http://example.com/flashcards'
+    assert data['preview_url'] == 'http://example.com/preview.jpg'
 
 def test_get_nonexistent_activity_integration(client):
     """Test getting non-existent activity"""
-    response = client.get('/api/study_activities/999')
+    response = client.get('/api/study-activities/999')
     assert response.status_code == 404
 
 def test_create_activity_integration(client):
     """Test creating new activity"""
-    response = client.post('/api/study_activities', json={
+    response = client.post('/api/study-activities', json={
         'name': 'Quiz',
-        'description': 'Test your knowledge'
+        'launch_url': 'http://example.com/quiz',
+        'preview_url': 'http://example.com/quiz-preview.jpg'
     })
     assert response.status_code == 201
     data = response.get_json()
     assert data['name'] == 'Quiz'
-    assert data['description'] == 'Test your knowledge'
+    assert data['launch_url'] == 'http://example.com/quiz'
 
 def test_create_activity_missing_name_integration(client):
     """Test creating activity without name"""
-    response = client.post('/api/study_activities', json={
-        'description': 'Test your knowledge'
+    response = client.post('/api/study-activities', json={
+        'url': 'http://example.com/quiz',
+        'preview_url': 'http://example.com/quiz-preview.jpg'
     })
     assert response.status_code == 400 
