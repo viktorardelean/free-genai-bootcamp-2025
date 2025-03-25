@@ -116,31 +116,50 @@ def load(app):
             'total_pages': math.ceil(total_count / per_page)
         })
 
-    @app.route('/api/study-activities/<int:id>/launch', methods=['GET'])
+    @app.route('/api/study-activities/<int:activity_id>/launch', methods=['GET'])
     @cross_origin()
-    def get_study_activity_launch_data(id):
-        cursor = app.db.cursor()
-        
-        # Get activity details
-        cursor.execute('SELECT id, name, url, preview_url FROM study_activities WHERE id = ?', (id,))
-        activity = cursor.fetchone()
-        
-        if not activity:
-            return jsonify({'error': 'Activity not found'}), 404
-        
-        # Get available groups
-        cursor.execute('SELECT id, name FROM groups')
-        groups = cursor.fetchall()
-        
-        return jsonify({
-            'activity': {
-                'id': activity['id'],
-                'title': activity['name'],
-                'launch_url': activity['url'],
-                'preview_url': activity['preview_url']
-            },
-            'groups': [{
-                'id': group['id'],
-                'name': group['name']
-            } for group in groups]
-        })
+    def get_study_activity_launch_data(activity_id):
+        try:
+            cursor = app.db.cursor()
+            
+            # First get the activity details
+            cursor.execute('''
+                SELECT id, name, launch_url, preview_url
+                FROM study_activities 
+                WHERE id = ?
+            ''', (activity_id,))
+            
+            activity = cursor.fetchone()
+            if not activity:
+                return jsonify({"error": "Activity not found"}), 404
+            
+            # Get all available groups
+            cursor.execute('''
+                SELECT g.id, g.name, COUNT(w.id) as word_count
+                FROM groups g
+                LEFT JOIN words w ON w.group_id = g.id
+                GROUP BY g.id
+                ORDER BY g.name
+            ''')
+            
+            groups = cursor.fetchall()
+            
+            return jsonify({
+                'activity': {
+                    'id': activity['id'],
+                    'title': activity['name'],
+                    'type': 'writing',  # Hardcode type since it's not in DB
+                    'launch_url': activity['launch_url'],
+                    'preview_url': activity['preview_url']
+                },
+                'groups': [{
+                    'id': group['id'],
+                    'name': group['name'],
+                    'word_count': group['word_count']
+                } for group in groups]
+            })
+            
+        except Exception as e:
+            app.logger.error(f"Error getting launch data: {str(e)}")
+            app.logger.error(traceback.format_exc())
+            return jsonify({"error": str(e)}), 500

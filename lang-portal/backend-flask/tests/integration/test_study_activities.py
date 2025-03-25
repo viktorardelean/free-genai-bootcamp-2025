@@ -81,4 +81,10 @@ def test_create_activity_missing_name_integration(client):
         'url': 'http://example.com/quiz',
         'preview_url': 'http://example.com/quiz-preview.jpg'
     })
-    assert response.status_code == 400 
+    assert response.status_code == 400
+
+
+def test_get_nonexistent_activity_launch_data_integration(client):
+    """Test getting launch data for non-existent activity"""
+    response = client.get('/api/study-activities/999/launch')
+    assert response.status_code == 404 

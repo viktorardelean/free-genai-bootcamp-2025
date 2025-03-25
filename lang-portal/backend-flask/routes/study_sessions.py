@@ -4,6 +4,7 @@ from datetime import datetime
 import math
 from contextlib import contextmanager
 from services.study_session_service import StudySessionService
+import traceback
 
 # Constants for error messages
 ERROR_MESSAGES = {
@@ -250,6 +251,8 @@ def load(app):
         return jsonify(result), 200
         
     except Exception as e:
+        app.logger.error(f"Error in review_word: {str(e)}")
+        app.logger.error(traceback.format_exc())
         return jsonify({"error": str(e)}), 500
 
   @app.route('/api/study_sessions/reset', methods=['POST'])

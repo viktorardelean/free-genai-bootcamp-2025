@@ -11,6 +11,9 @@ import {
 import { useNavigation } from '@/context/NavigationContext'
 import { createStudySession } from '@/services/api'
 
+// Change API URL constant
+const API_URL = import.meta.env.LANG_PORTAL_URL || 'http://localhost:5001'
+
 type Group = {
   id: number
   name: string
@@ -40,7 +43,7 @@ export default function StudyActivityLaunch() {
   const { groupId } = location.state || {}
 
   useEffect(() => {
-    fetch(`http://localhost:5001/api/study-activities/${id}/launch`)
+    fetch(`${API_URL}/api/study-activities/${id}/launch`)
       .then(response => {
         if (!response.ok) throw new Error('Failed to fetch launch data')
         return response.json()
@@ -76,13 +79,32 @@ export default function StudyActivityLaunch() {
     if (!launchData?.activity || !selectedGroup) return;
     
     try {
-      // Get the launch URL from the activity data and add query parameters
-      const launchUrl = new URL(launchData.activity.launch_url);
-      launchUrl.searchParams.set('group_id', selectedGroup);
+      // Create a new study session
+      const response = await fetch(`${API_URL}/api/study_sessions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          group_id: parseInt(selectedGroup, 10),
+          study_activity_id: launchData.activity.id
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create study session');
+      }
+
+      const session = await response.json();
       
-      // Open the modified URL in a new tab
-      window.open(launchUrl.toString(), '_blank');
+      // Add session_id to the activity URL
+      const activityUrl = new URL(launchData.activity.launch_url);
+      activityUrl.searchParams.set('group_id', selectedGroup);
+      activityUrl.searchParams.set('session_id', session.id.toString());
       
+      // Open in new tab
+      window.location.href = activityUrl.toString();
+
     } catch (error) {
       console.error('Failed to launch activity:', error);
       setError('Failed to launch activity. Please try again.');
