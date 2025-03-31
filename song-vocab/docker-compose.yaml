@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  song-vocab:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - host_ip=${host_ip}
+      - LLM_ENDPOINT_PORT=${LLM_ENDPOINT_PORT}
+      - LLM_MODEL_ID=${LLM_MODEL_ID}
+    env_file:
+      - ../opea-comps/ollama-variables.env
+    command: uvicorn app:app --host 0.0.0.0 --port 8000 

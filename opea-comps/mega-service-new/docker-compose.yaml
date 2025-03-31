@@ -1,0 +1,36 @@
+services:
+  megaservice-new:
+      build:
+        context: .
+        dockerfile: Dockerfile
+      container_name: megaservice-new
+      # depends_on:
+      #   - redis-vector-db
+      #   - tei-embedding-service
+      #   - retriever
+      #   - tei-reranking-service
+      #   - vllm-service
+      ports:
+        - "8888:8888"
+      ipc: host
+      restart: always
+  vllm-service:
+    image: vllm/vllm:latest
+    platform: linux/arm64
+    container_name: vllm-service
+    ports:
+      - "9009:80"
+    volumes:
+      - "${MODEL_CACHE:-./data}:/root/.cache/huggingface/hub"
+    shm_size: 128g
+    environment:
+      no_proxy: ${no_proxy}
+      http_proxy: ${http_proxy}
+      https_proxy: ${https_proxy}
+      HF_TOKEN: ${HUGGINGFACEHUB_API_TOKEN}
+      LLM_MODEL_ID: ${LLM_MODEL_ID}
+      VLLM_TORCH_PROFILER_DIR: "/mnt"
+    command: python -m vllm.entrypoints.openai --model $LLM_MODEL_ID --host 0.0.0.0 --port 80
+networks:
+  default:
+    driver: bridge
