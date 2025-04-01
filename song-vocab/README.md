@@ -5,7 +5,8 @@ A service that finds song lyrics and extracts vocabulary to help language learne
 ## Prerequisites
 
 - Python 3.12
-- Ollama running in Docker (using opea-comps setup)
+- Ollama running in Docker (using opea-comps setup) - for local agent
+- AWS account with Bedrock access - for cloud agent
 - `jq` command-line tool (optional, for pretty-printing JSON)
 
 ## Setup
@@ -26,7 +27,7 @@ source venv/bin/activate  # On Windows: .\venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## Running the App
+## Running the Local Agent (Ollama)
 
 1. Make sure your Ollama container is running:
 ```bash
@@ -59,17 +60,34 @@ curl http://127.0.0.1:8008/api/chat \
 
 2. Source the Ollama environment variables and start the app:
 ```bash
-cd ../song-vocab  # Go back to song-vocab directory
+cd ../song-vocab
 source ../opea-comps/ollama-variables.env
 uvicorn app:app --reload
 ```
 
+## Running the Cloud Agent (Bedrock)
+
+You can test the Bedrock agent using the provided script:
+
+```bash
+# Using aws-vault (recommended)
+aws-vault exec your-profile -- ./test-bedrock.sh
+
+# Or directly if AWS credentials are configured
+./test-bedrock.sh
+```
+
 ## Testing
 
-Use the provided test script:
+For local agent:
 ```bash
 chmod +x bin/test.sh  # Make script executable (first time only)
 ./bin/test.sh
+```
+
+For Bedrock agent:
+```bash
+./test-bedrock.sh
 ```
 
 [Rest of README...]
