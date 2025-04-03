@@ -85,6 +85,29 @@ def seed_db(conn, seed_file, group_name):
         conn.rollback()
         raise
 
+def seed_study_activities(conn):
+    """Seed study activities from JSON file"""
+    cursor = conn.cursor()
+    
+    try:
+        # Read and insert study activities
+        with open('db/seeds/study_activities.json') as f:
+            activities = json.load(f)
+            
+        for activity in activities:
+            cursor.execute('''
+                INSERT OR IGNORE INTO study_activities (name, launch_url, preview_url) 
+                VALUES (?, ?, ?)
+            ''', (activity['name'], activity['launch_url'], activity['preview_url']))
+        
+        conn.commit()
+        print(f"Seeded {len(activities)} study activities")
+        
+    except Exception as e:
+        print(f"Error seeding study activities: {e}")
+        conn.rollback()
+        raise
+
 def main():
     """Main entry point for database initialization"""
     # Initialize database
@@ -96,7 +119,10 @@ def main():
     conn.row_factory = sqlite3.Row
     
     try:
-        # Define seed files and their groups
+        # Seed study activities first
+        seed_study_activities(conn)
+        
+        # Define word group seeds
         seeds = [
             ('db/seeds/animals.json', 'Animals'),
             ('db/seeds/colors.json', 'Colors'),
@@ -105,7 +131,7 @@ def main():
             ('db/seeds/family.json', 'Family')
         ]
         
-        # Run all seeds
+        # Run all word group seeds
         for seed_file, group_name in seeds:
             seed_db(conn, seed_file, group_name)
             

@@ -135,10 +135,10 @@ def load(app):
             
             # Get all available groups
             cursor.execute('''
-                SELECT g.id, g.name, COUNT(w.id) as word_count
+                SELECT g.id, g.name, COUNT(wg.word_id) as word_count
                 FROM groups g
-                LEFT JOIN words w ON w.group_id = g.id
-                GROUP BY g.id
+                LEFT JOIN word_groups wg ON g.id = wg.group_id
+                GROUP BY g.id, g.name
                 ORDER BY g.name
             ''')
             

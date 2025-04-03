@@ -43,12 +43,4 @@ CREATE TABLE IF NOT EXISTS word_review_items (
     created_at TIMESTAMP NOT NULL,
     FOREIGN KEY (study_session_id) REFERENCES study_sessions (id),
     FOREIGN KEY (word_id) REFERENCES words (id)
-);
-
--- Insert initial study activities
-INSERT OR REPLACE INTO study_activities (name, launch_url, preview_url) VALUES
-    ('Flashcards', 'http://localhost:8080', '/assets/previews/flashcards.png'),
-    ('Multiple Choice', 'http://localhost:8081', '/assets/previews/multiple-choice.png'),
-    ('Spelling', 'http://localhost:8082', '/assets/previews/spelling.png'),
-    ('Translation', 'http://localhost:8083', '/assets/previews/translation.png'),
-    ('Writing Practice', 'http://localhost:8084', '/assets/previews/writing-practice.png'); 
+); 

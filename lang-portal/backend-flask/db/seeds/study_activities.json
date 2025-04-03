@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Flashcards",
+    "launch_url": "http://localhost:8080",
+    "preview_url": "/assets/previews/flashcards.png"
+  },
+  {
+    "name": "Multiple Choice",
+    "launch_url": "http://localhost:8081",
+    "preview_url": "/assets/previews/multiple-choice.png"
+  },
+  {
+    "name": "Spelling",
+    "launch_url": "http://localhost:8082",
+    "preview_url": "/assets/previews/spelling.png"
+  },
+  {
+    "name": "Translation",
+    "launch_url": "http://localhost:8083",
+    "preview_url": "/assets/previews/translation.png"
+  },
+  {
+    "name": "Writing Practice",
+    "launch_url": "http://localhost:8084",
+    "preview_url": "/assets/previews/writing-practice.png"
+  },
+  {
+    "name": "Visual Quiz",
+    "launch_url": "http://localhost:8085",
+    "preview_url": "/assets/previews/visual-quiz.png"
+  }
+] 
