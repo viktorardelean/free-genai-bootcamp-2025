@@ -97,6 +97,23 @@ def test_data(db):
         'word_id': word_id
     }
 
+@pytest.fixture(autouse=True)
+def setup_test_db(db):
+    """Setup test database with required tables"""
+    cursor = db.cursor()
+    # Create stats table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS word_review_items_stats (
+            word_id INTEGER PRIMARY KEY,
+            correct_count INTEGER DEFAULT 0,
+            wrong_count INTEGER DEFAULT 0,
+            last_reviewed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (word_id) REFERENCES words (id)
+        )
+    ''')
+    db.commit()
+    yield
+
 def test_create_session_success(service, test_data):
     """Test creating a study session successfully"""
     session = service.create_session(test_data['group_id'], test_data['activity_id'])
@@ -146,19 +163,19 @@ def test_review_word_nonexistent_word(service, test_data):
 def test_review_word_updates_counts(service, test_data):
     """Test that reviewing updates word review counts"""
     session = service.create_session(test_data['group_id'], test_data['activity_id'])
-    
+
     # Review word twice - once correct, once incorrect
     service.review_word(session.id, test_data['word_id'], True)
     service.review_word(session.id, test_data['word_id'], False)
-    
-    # Check counts
+
+    # Check counts in stats table
     cursor = service.db.cursor()
     cursor.execute('''
         SELECT correct_count, wrong_count 
-        FROM word_reviews 
+        FROM word_review_items_stats 
         WHERE word_id = ?
     ''', (test_data['word_id'],))
-    
-    counts = cursor.fetchone()
-    assert counts['correct_count'] == 1
-    assert counts['wrong_count'] == 1 
+    stats = cursor.fetchone()
+
+    assert stats['correct_count'] == 1
+    assert stats['wrong_count'] == 1 

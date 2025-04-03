@@ -120,3 +120,16 @@ def load(app):
       
     except Exception as e:
       return jsonify({"error": str(e)}), 500
+
+  @app.route('/<int:word_id>/reviews', methods=['GET'])
+  def get_word_reviews(word_id):
+    cursor = app.db.cursor()
+    cursor.execute('''
+        SELECT wri.*, ss.study_activity_id
+        FROM word_review_items wri
+        JOIN study_sessions ss ON ss.id = wri.study_session_id
+        WHERE wri.word_id = ?
+        ORDER BY wri.created_at DESC
+    ''', (word_id,))
+    reviews = cursor.fetchall()
+    # ... rest of the function

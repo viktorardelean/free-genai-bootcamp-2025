@@ -43,4 +43,13 @@ CREATE TABLE IF NOT EXISTS word_review_items (
     created_at TIMESTAMP NOT NULL,
     FOREIGN KEY (study_session_id) REFERENCES study_sessions (id),
     FOREIGN KEY (word_id) REFERENCES words (id)
+);
+
+-- Create word review statistics table
+CREATE TABLE IF NOT EXISTS word_review_items_stats (
+    word_id INTEGER PRIMARY KEY,
+    correct_count INTEGER DEFAULT 0,
+    wrong_count INTEGER DEFAULT 0,
+    last_reviewed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (word_id) REFERENCES words (id)
 ); 

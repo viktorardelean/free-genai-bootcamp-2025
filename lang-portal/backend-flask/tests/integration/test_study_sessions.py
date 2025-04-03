@@ -71,6 +71,16 @@ def app():
             )
         ''')
         
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS word_review_items_stats (
+                word_id INTEGER PRIMARY KEY,
+                correct_count INTEGER DEFAULT 0,
+                wrong_count INTEGER DEFAULT 0,
+                last_reviewed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (word_id) REFERENCES words (id)
+            )
+        ''')
+        
         app.db.commit()
     
     # Import and register routes
@@ -123,6 +133,24 @@ def test_data(app):
         'activity_id': test_activity_id,
         'word_id': test_word_id
     }
+
+@pytest.fixture(autouse=True)
+def setup_db(app):
+    """Setup test database with required tables"""
+    with app.app_context():
+        cursor = app.db.cursor()
+        # Create stats table
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS word_review_items_stats (
+                word_id INTEGER PRIMARY KEY,
+                correct_count INTEGER DEFAULT 0,
+                wrong_count INTEGER DEFAULT 0,
+                last_reviewed TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (word_id) REFERENCES words (id)
+            )
+        ''')
+        app.db.commit()
+        yield
 
 def test_create_study_session_integration(client, app, test_data):
     """Test creating a study session through API"""

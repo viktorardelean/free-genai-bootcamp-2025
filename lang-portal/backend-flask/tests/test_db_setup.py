@@ -68,7 +68,7 @@ def test_seeding():
     word_counts = {row['group_name']: row['word_count'] for row in cursor.fetchall()}
     
     # Verify each group has words
-    assert word_counts['Animals'] == 3, "Animals group should have 3 words"
+    assert word_counts['Animals'] == 10, "Animals group should have 10 words"
     assert word_counts['Colors'] == 6, "Colors group should have 6 words"
     assert word_counts['Numbers'] == 5, "Numbers group should have 5 words"
     assert word_counts['Food'] == 5, "Food group should have 5 words"

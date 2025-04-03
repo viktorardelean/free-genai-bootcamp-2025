@@ -10,5 +10,33 @@
   {
     "spanish": "pájaro",
     "english": "bird"
+  },
+  {
+    "spanish": "caballo",
+    "english": "horse"
+  },
+  {
+    "spanish": "vaca",
+    "english": "cow"
+  },
+  {
+    "spanish": "cerdo",
+    "english": "pig"
+  },
+  {
+    "spanish": "conejo",
+    "english": "rabbit"
+  },
+  {
+    "spanish": "pez",
+    "english": "fish"
+  },
+  {
+    "spanish": "ratón",
+    "english": "mouse"
+  },
+  {
+    "spanish": "elefante",
+    "english": "elephant"
   }
 ] 
