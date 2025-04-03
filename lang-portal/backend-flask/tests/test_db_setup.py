@@ -82,7 +82,8 @@ def test_seeding():
         'Multiple Choice', 
         'Spelling', 
         'Translation',
-        'Writing Practice'
+        'Writing Practice',
+        'Visual Quiz'
     }
     assert expected_activities == activities, "Not all study activities were created"
 
